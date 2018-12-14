@@ -1,9 +1,8 @@
 ﻿# DAY 4
 
-$day4input = @(Get-Content -Path C:\Temp\AdventOfCode\2018\Input-DAY4.txt)
+$day4input = @(Get-Content -Path C:\Temp\AdventOfCode\2018\Input-DAY4.txt | Sort-Object)
 
-$timeBook = @{}
-$timeBookSorted = [ordered]@{}
+$timeBook =[ordered] @{}
 $guardData = @{}
 $guardHighestSleepTime = 0
 $occurence = 0
@@ -13,41 +12,38 @@ $day4input | ForEach-Object {
     $timeBook.Add((Get-Date "$($_.SubString(1,16))" -Format "yyyy-MM-dd hh:mm tt"),$_.Split('^]')[-1].trimstart().trimend())
 }
 
-$timeBook.Keys | Sort-Object | ForEach-Object {
-    $timeBookSorted.Add($_,$timeBook[$_])
-}
 
-foreach ($timeSlot in $timeBookSorted.Keys) {
+foreach ($timeSlot in $timeBook.Keys) {
     
-    if ($timeBookSorted."$timeSlot" -match 'Guard') {
-        $guardID = [int]($timeBookSorted."$timeSlot").Split('^#').TrimEnd().Split(' ')[1]
-        #Write-Host "GUARD ID: $guardID" -ForegroundColor Green
+    if ($timeBook."$timeSlot" -match 'Guard') {
+        $guardID = [int]($timeBook."$timeSlot").Split('^#').TrimEnd().Split(' ')[1]
     }
 
     if (!$guardData.ContainsKey($guardID)) {
-        #Write-Host "Create new set for GUARD ID: $guardID" -ForegroundColor Green
         $GD = @{
             recurrenceTime = @()
             fallsAsleep = @()
             wakesUp = @()
             sleepDuration = @()
+            minute = @()
             timeAsleep = 0
         }
         $guardData.Add($guardID,$GD)
     }
 
-    switch (($timeBookSorted."$timeSlot")) {
+    switch (($timeBook."$timeSlot")) {
         'falls asleep' { 
             $guardData[$guardID].fallsAsleep += (Get-Date $timeSlot -Format hh:mmtt)
-            $guardData[$guardID].sleepDuration += (Get-Date $timeSlot).Minute
+            $guardData[$guardID].sleepDuration += (Get-Date $timeSlot -Format hh:mmtt)
+            $guardData[$guardID].minute += (Get-Date $timeSlot).Minute
         }
         'wakes up' { 
-            $guardData[$guardID].wakesUp += (Get-Date $timeSlot -Format hh:mmtt).Minute
+            $guardData[$guardID].wakesUp += (Get-Date $timeSlot -Format hh:mmtt)
             $diff = (Get-Date(Get-Date $timeSlot)).Minute - (Get-Date $guardData[$guardID].sleepDuration[-1]).Minute
             for ($x = 1;$x -lt $diff;$x++) {
-                $guardData[$guardID].sleepDuration += (Get-Date(Get-Date $guardData[$guardID].sleepDuration[-1]).AddMinutes(1) -Format hh:mmtt).Minute
+                $guardData[$guardID].minute += (Get-Date(Get-Date $guardData[$guardID].sleepDuration[-1]).AddMinutes(1)).Minute
+                $guardData[$guardID].sleepDuration += (Get-Date(Get-Date $guardData[$guardID].sleepDuration[-1]).AddMinutes(1) -Format hh:mmtt)
             }
-            $guardData[$guardID].sleepDuration += (Get-Date(Get-Date $timeSlot).AddMinutes(-1) -Format hh:mmtt).Minute
             [int]$lastFallsAsleep = (Get-Date $guardData[$guardID].fallsAsleep[-1] -Format mm)
             $guardData[$guardID].timeAsleep += [int](Get-Date $timeSlot).AddMinutes(-$lastFallsAsleep).Minute
         }
@@ -62,21 +58,20 @@ foreach ($key in $guardData.Keys) {
         $guardIDHighestSleepTime = $key
         $guardHighestSleepTime = [int]$guardData[$key].timeAsleep
     }
-    ($guardData[$key].sleepDuration | Group-Object | Select-Object count,name) | Where-Object { $_.count -gt 1 } | ForEach-Object {
+    ($guardData[$key].minute | Group-Object | Select-Object count,name) | Where-Object { $_.count -gt 1 } | ForEach-Object {
         $guardData[$key].recurrenceTime += "$($_.count)@$($_.name)"
     }
 }
 
-$guardIDHighestSleepTime
-$guardData[$guardIDHighestSleepTime].timeAsleep
+#$guardIDHighestSleepTime
+#$guardData[$guardIDHighestSleepTime].timeAsleep
 $guardData[$guardIDHighestSleepTime].recurrenceTime | ForEach-Object {
     if ($occurence -lt [int]$_.Split('@')[0]) {
         $occurence = [int]$_.Split('@')[0]
+        $minute = [int]$_.Split('@')[1]
     }
 }
-$guardData[$guardIDHighestSleepTime].recurrenceTime | Where-Object {
-    $_ -match "^$occurence@"
-}
+#Write-Host "$occurence @ $minute"
 
-
-#($guardData[877].fallsAsleep | Group-Object | Select-Object count,name).where({$_.Count -gt 1}) | %{ $_.Count;$_.Name;pause }
+Write-Host "DAY 4 PART 1: " -NoNewline -ForegroundColor Magenta
+Write-Host "Guard ID: $guardIDHighestSleepTime, Minute: $minute = $($guardIDHighestSleepTime * $minute)" -ForegroundColor Green
