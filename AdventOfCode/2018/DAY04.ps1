@@ -4,14 +4,13 @@ $day4input = @(Get-Content -Path C:\Temp\AdventOfCode\2018\Input-DAY4.txt | Sort
 
 $timeBook =[ordered] @{}
 $guardData = @{}
-$guardHighestSleepTime = 0
 $occurence = 0
+$highRecrurrence = @(0,0,0)
 [System.Collections.Generic.HashSet[DateTime]]$dateConversion = @{}
 
 $day4input | ForEach-Object {
     $timeBook.Add((Get-Date "$($_.SubString(1,16))" -Format "yyyy-MM-dd hh:mm tt"),$_.Split('^]')[-1].trimstart().trimend())
 }
-
 
 foreach ($timeSlot in $timeBook.Keys) {
     
@@ -61,6 +60,7 @@ foreach ($key in $guardData.Keys) {
     ($guardData[$key].minute | Group-Object | Select-Object count,name) | Where-Object { $_.count -gt 1 } | ForEach-Object {
         $guardData[$key].recurrenceTime += "$($_.count)@$($_.name)"
     }
+
 }
 
 #$guardIDHighestSleepTime
@@ -71,7 +71,22 @@ $guardData[$guardIDHighestSleepTime].recurrenceTime | ForEach-Object {
         $minute = [int]$_.Split('@')[1]
     }
 }
-#Write-Host "$occurence @ $minute"
 
+$occurenceTop = 0
+$occurenceTopMin = 0
+foreach ($key in $guardData.Keys) {
+    foreach ($recurrence in $guardData[$key].recurrenceTime) {
+        if ($occurenceTop -lt [int]$recurrence.Split('@')[0]) {
+            $occurenceTop = [int]$recurrence.Split('@')[0]
+            $occurenceTopMin = [int]$recurrence.Split('@')[1]
+            $guardTop = $key
+            #$minute = [int]$_.recurrenceTime.Split('@')[1]
+        }
+    }
+    
+}
 Write-Host "DAY 4 PART 1: " -NoNewline -ForegroundColor Magenta
 Write-Host "Guard ID: $guardIDHighestSleepTime, Minute: $minute = $($guardIDHighestSleepTime * $minute)" -ForegroundColor Green
+
+Write-Host "DAY 4 PART 2: " -NoNewline -ForegroundColor Magenta
+Write-Host "Guard ID: $guardTop, Minute: $occurenceTopMin = $($guardTop * $occurenceTopMin)" -ForegroundColor Green

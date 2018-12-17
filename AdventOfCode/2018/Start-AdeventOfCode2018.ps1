@@ -10,3 +10,7 @@
 
 # DAY 3 dot dource script root
 . $scriptRoot\DAY03.ps1
+
+
+# DAY 4 dot dource script root
+. $scriptRoot\DAY04.ps1
